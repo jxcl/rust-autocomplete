@@ -1,10 +1,47 @@
+use std::cmp::{Ord,PartialOrd,Ordering};
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
+// SimpleWordModel uses a HashMap representation to train on word
+// frequency. It is fast for looking up words and incrementing their
+// count but since HashMap does not keep track of order, searching the
+// keys of a hashmap takes a long time. After the model is trained it
+// must be converted to a SimpleWordPredictor which stores the words
+// in lexical order and has an index of first letters.
+
+#[derive(Debug)]
 pub struct SimpleWordModel(HashMap<String, u32>);
-pub struct Prediction {
+
+#[derive(Debug)]
+pub struct SimpleWordPredictor {
+    entries: Vec<SimpleWordEntry>,
+    ixs: HashMap<char, u32>,
+
+}
+#[derive(Debug)]
+pub struct SimpleWordEntry {
     word: String,
     score: u32,
+}
+
+impl Eq for SimpleWordEntry { }
+
+impl PartialEq for SimpleWordEntry {
+    fn eq(&self, other: &Self) -> bool {
+        self.word.eq(&other.word)
+    }
+}
+
+impl PartialOrd for SimpleWordEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.word.partial_cmp(&other.word)
+    }
+}
+
+impl Ord for SimpleWordEntry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.word.cmp(&other.word)
+    }
 }
 
 impl SimpleWordModel {
@@ -37,18 +74,46 @@ impl SimpleWordModel {
         count_words(self, &v_input);
     }
 
-    pub fn suggest(&self, letters: &str) -> Vec<Prediction> {
-        let mut predictions: Vec<Prediction> = Vec::new();
-        let &SimpleWordModel(ref model_hm) = self;
+    pub fn train_vec(&mut self, input: Vec<&str>) {
+        count_words(self, &input);
+    }
 
-        for (key, value) in model_hm {
-            if key.starts_with(letters) {
-                predictions.push(Prediction {word: key.clone(), score: *value});
-            }
+    pub fn finalize(self) -> SimpleWordPredictor {
+        let SimpleWordModel(hm) = self;
+        let size = hm.len();
+        let mut entries = Vec::with_capacity(size);
+
+        for (key, value) in hm {
+            entries.push(SimpleWordEntry {word: key, score: value});
         }
 
-        predictions
+        entries.sort();
+
+        let ixs = generate_ixs(&entries);
+        println!("{:?}", entries);
+        println!("{:?}", ixs);
+        SimpleWordPredictor {entries: entries, ixs: ixs}
     }
+}
+
+fn generate_ixs(entries: &Vec<SimpleWordEntry>) -> HashMap<char, u32>{
+    let mut ixs: HashMap<char, u32> = HashMap::new();
+
+    // There will be no newlines in the input. This is a placeholder
+    // until the first time the loop runs.
+    let mut last_c = '\n';
+    let mut ix = 0;
+
+    for entry in entries {
+        let c = entry.word.char_at(0);
+        if c != last_c {
+            ixs.insert(c, ix);
+            last_c = c;
+        }
+        ix += 1;
+    }
+
+    ixs
 }
 
 fn count_words(model: &mut SimpleWordModel, input: &Vec<&str>) {
@@ -67,8 +132,6 @@ fn count_words(model: &mut SimpleWordModel, input: &Vec<&str>) {
         }
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -95,7 +158,7 @@ mod tests {
     }
 
     #[test]
-    fn test_train() {
+    fn test_train_str() {
         let mut model = SimpleWordModel::new();
 
         model.train_str("hello hello hello there there");
@@ -103,6 +166,34 @@ mod tests {
         let SimpleWordModel(hash_map) = model;
         assert_eq!(3, *hash_map.get("hello").unwrap());
         assert_eq!(2, *hash_map.get("there").unwrap());
+    }
+
+    #[test]
+    fn test_train_vec() {
+        let mut model = SimpleWordModel::new();
+
+        model.train_vec(vec!["hello", "hello", "hello", "what",
+                             "is", "this"]);
+
+        let SimpleWordModel(hash_map) = model;
+        assert_eq!(3, *hash_map.get("hello").unwrap());
+        assert_eq!(1, *hash_map.get("what").unwrap());
+    }
+
+    #[test]
+    fn test_finalize() {
+        let mut model = SimpleWordModel::new();
+
+        model.train_str(concat!["anybody can become angry that is easy but to be ",
+                                "angry with the right person and to the right degree ",
+                                "and at the right time and for the right purpose ",
+                                "and in the right way that is not within everybody's ",
+                                "power and is not easy"]);
+
+        let predictor = model.finalize();
+
+        assert_eq!(predictor.entries[0].word, "and");
+        assert_eq!(predictor.entries[0].score, 5);
     }
 
 }
