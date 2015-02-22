@@ -1,0 +1,13 @@
+[package]
+
+name = "rust-autocomplete"
+version = "0.0.1"
+authors = ["Alexander Bliskovsky <alexander.bliskovsky@gmail.com>"]
+
+[lib]
+name = "autocomplete"
+path = "src/lib.rs"
+
+[[bin]]
+name = "autocomplete-bin"
+path = "src/bin.rs"
