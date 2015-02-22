@@ -1,3 +1,7 @@
+// This library is inspired by Rodrigo Palacios's excellent
+// explanation of autocompletion that can be found here:
+// https://github.com/rodricios/autocomplete
+
 use std::cmp::{Ord,PartialOrd,Ordering};
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -8,10 +12,12 @@ use std::collections::hash_map::Entry;
 // keys of a hashmap takes a long time. After the model is trained it
 // must be converted to a SimpleWordPredictor which stores the words
 // in lexical order and has an index of first letters.
-
 #[derive(Debug)]
 pub struct SimpleWordModel(HashMap<String, u32>);
 
+// SimpleWordPredictor uses a constant sized vector of entries indexed by
+// first letter. Prediction starts from that index and continues until
+// the first letter in the vector changes.
 #[derive(Debug)]
 pub struct SimpleWordPredictor {
     entries: Vec<SimpleWordEntry>,
@@ -33,6 +39,8 @@ impl Clone for SimpleWordEntry {
     }
 }
 
+// Eq, PartialEq, PartialOrd and Ord are necessary to be able to
+// .sort() a vec<SimpleWordEntry>.
 impl Eq for SimpleWordEntry { }
 
 impl PartialEq for SimpleWordEntry {
@@ -54,6 +62,8 @@ impl Ord for SimpleWordEntry {
 }
 
 impl SimpleWordPredictor {
+    // Given an input string, return the top 10 suggestions based on
+    // training data.
     pub fn predict(&self, input: &str) -> Vec<SimpleWordEntry> {
         let mut predictions: Vec<SimpleWordEntry> = Vec::new();
         let iter = self.entries.iter();
@@ -123,6 +133,7 @@ impl SimpleWordModel {
         count_words(self, &input);
     }
 
+    // Convert the HashMap representation to an indexed vec.
     pub fn finalize(self) -> SimpleWordPredictor {
         let SimpleWordModel(hm) = self;
         let size = hm.len();
