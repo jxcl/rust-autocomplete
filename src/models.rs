@@ -20,8 +20,8 @@ pub struct SimpleWordPredictor {
 
 #[derive(Debug)]
 pub struct SimpleWordEntry {
-    word: String,
-    score: u32,
+    pub word: String,
+    pub score: u32,
 }
 
 impl Clone for SimpleWordEntry {
@@ -65,7 +65,7 @@ impl SimpleWordPredictor {
                 let iter = iter.skip(*n as usize);
                 for entry in iter {
                     let word = entry.word.as_slice();
-                    if input.cmp(word) == Ordering::Greater {
+                    if word.char_at(0) != first_letter {
                         break;
                     }
 
@@ -77,6 +77,8 @@ impl SimpleWordPredictor {
                 predictions.sort_by(|a, b| {
                     b.score.cmp(&a.score)
                 });
+
+                predictions.truncate(10);
 
                 predictions
             },
@@ -160,6 +162,9 @@ fn generate_ixs(entries: &Vec<SimpleWordEntry>) -> HashMap<char, u32>{
 fn count_words(model: &mut SimpleWordModel, input: &Vec<&str>) {
     let &mut SimpleWordModel(ref mut model_hm) = model;
     for word in input {
+        if word.len() == 0 {
+            continue;
+        }
         let string_word = String::from_str(*word);
         let entry = model_hm.entry(string_word);
         match entry {
