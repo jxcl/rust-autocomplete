@@ -16,12 +16,21 @@ pub struct SimpleWordModel(HashMap<String, u32>);
 pub struct SimpleWordPredictor {
     entries: Vec<SimpleWordEntry>,
     ixs: HashMap<char, u32>,
-
 }
+
 #[derive(Debug)]
 pub struct SimpleWordEntry {
     word: String,
     score: u32,
+}
+
+impl Clone for SimpleWordEntry {
+    fn clone(&self) -> Self {
+        SimpleWordEntry {
+            word: self.word.clone(),
+            score: self.score
+        }
+    }
 }
 
 impl Eq for SimpleWordEntry { }
@@ -41,6 +50,40 @@ impl PartialOrd for SimpleWordEntry {
 impl Ord for SimpleWordEntry {
     fn cmp(&self, other: &Self) -> Ordering {
         self.word.cmp(&other.word)
+    }
+}
+
+impl SimpleWordPredictor {
+    pub fn predict(&self, input: &str) -> Vec<SimpleWordEntry> {
+        let mut predictions: Vec<SimpleWordEntry> = Vec::new();
+        let iter = self.entries.iter();
+        let first_letter = input.char_at(0);
+        let skip_n = self.ixs.get(&first_letter);
+
+        match skip_n {
+            Some(n) => {
+                let iter = iter.skip(*n as usize);
+                for entry in iter {
+                    let word = entry.word.as_slice();
+                    if input.cmp(word) == Ordering::Greater {
+                        break;
+                    }
+
+                    if word.starts_with(input) {
+                        predictions.push(entry.clone());
+                    }
+                }
+
+                predictions.sort_by(|a, b| {
+                    b.score.cmp(&a.score)
+                });
+
+                predictions
+            },
+            None => {
+                return predictions;
+            },
+        }
     }
 }
 
@@ -90,8 +133,6 @@ impl SimpleWordModel {
         entries.sort();
 
         let ixs = generate_ixs(&entries);
-        println!("{:?}", entries);
-        println!("{:?}", ixs);
         SimpleWordPredictor {entries: entries, ixs: ixs}
     }
 }
@@ -194,6 +235,20 @@ mod tests {
 
         assert_eq!(predictor.entries[0].word, "and");
         assert_eq!(predictor.entries[0].score, 5);
+    }
+
+    #[test]
+    fn test_predict() {
+        let mut model = SimpleWordModel::new();
+
+        model.train_str(concat!["anybody can become angry that is easy but to be ",
+                                "angry with the right person and to the right degree ",
+                                "and at the right time and for the right purpose ",
+                                "and in the right way that is not within everybody's ",
+                                "power and is not easy"]);
+
+        let predictor = model.finalize();
+        println!("{:?}", predictor.predict("a"));
     }
 
 }
