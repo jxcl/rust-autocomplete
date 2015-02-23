@@ -131,6 +131,11 @@ impl SimpleWordTrainer {
         count_words(self, &input);
     }
 
+    pub fn train_word(&mut self, input: &str) {
+        let &mut SimpleWordTrainer(ref mut model_hm) = self;
+        train_single_word(model_hm, input);
+    }
+
     /// Perform the calculations needed to predict the next word.
     pub fn finalize(self) -> SimpleWordPredictor {
         let SimpleWordTrainer(hm) = self;
@@ -146,6 +151,14 @@ impl SimpleWordTrainer {
         let ixs = generate_ixs(&entries);
         SimpleWordPredictor {entries: entries, ixs: ixs}
     }
+
+    /// This method is not meant to be called from outside the library.
+    pub fn debug_get_word_score(&self, word: &str) -> Option<&u32> {
+        let &SimpleWordTrainer(ref hm) = self;
+
+        hm.get(word)
+    }
+
 }
 
 fn generate_ixs(entries: &Vec<PredictionEntry>) -> HashMap<char, u32>{
@@ -168,23 +181,27 @@ fn generate_ixs(entries: &Vec<PredictionEntry>) -> HashMap<char, u32>{
     ixs
 }
 
+fn train_single_word(model_hm: &mut HashMap<String, u32>, word: &str) {
+    if word.len() == 0 {
+        return;
+    }
+    let string_word = String::from_str(word);
+    let entry = model_hm.entry(string_word);
+    match entry {
+        Entry::Vacant(vacant_entry) => {
+            vacant_entry.insert(1);
+        },
+        Entry::Occupied(mut occ_entry) => {
+            let c = occ_entry.get_mut();
+            *c += 1;
+        }
+    }
+}
+
 fn count_words(model: &mut SimpleWordTrainer, input: &Vec<&str>) {
     let &mut SimpleWordTrainer(ref mut model_hm) = model;
     for word in input {
-        if word.len() == 0 {
-            continue;
-        }
-        let string_word = String::from_str(*word);
-        let entry = model_hm.entry(string_word);
-        match entry {
-            Entry::Vacant(vacant_entry) => {
-                vacant_entry.insert(1);
-            },
-            Entry::Occupied(mut occ_entry) => {
-                let c = occ_entry.get_mut();
-                *c += 1;
-            }
-        }
+        train_single_word(model_hm, word);
     }
 }
 
@@ -192,6 +209,13 @@ fn count_words(model: &mut SimpleWordTrainer, input: &Vec<&str>) {
 mod tests {
     use simplemodel::SimpleWordTrainer;
     use predictionentry::PredictionEntry;
+
+    #[test]
+    fn test_debug() {
+        let model = SimpleWordTrainer::from_str("world domination is my profession hello hello");
+
+        assert_eq!(&1, model.debug_get_word_score("world").unwrap());
+    }
 
     #[test]
     fn test_from_str() {

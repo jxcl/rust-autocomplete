@@ -1,17 +1,17 @@
+use simplemodel::SimpleWordTrainer;
+
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
 /// Bigram prediction trainer.
 pub struct BigramTrainer {
     // The collection of all position 1 words in the bigram.
-    outer_map: HashMap<String, InnerMap>,
+    outer_map: HashMap<String, SimpleWordTrainer>,
 
     // For creating a bigram from the first word of a new .train()
     // call.
     prev_word: Option<String>,
 }
-
-struct InnerMap(HashMap<String, u32>);
 
 impl BigramTrainer {
     /// Creates a new, empty BigramTrainer.
@@ -33,23 +33,6 @@ impl BigramTrainer {
     }
 }
 
-// Check if a word exists in the inner map. Add it if it does not,
-// increment it if it does.
-fn add_or_increment_inner(inner: &mut InnerMap, word: String) {
-    let &mut InnerMap(ref mut hm) = inner;
-    let entry = hm.entry(word);
-
-    match entry {
-        Entry::Vacant(vacant_entry) => {
-            vacant_entry.insert(1);
-        },
-        Entry::Occupied(mut occ_entry) => {
-            let count = occ_entry.get_mut();
-            *count += 1;
-        }
-    }
-}
-
 fn count_words(trainer: &mut BigramTrainer, input: &Vec<&str>) {
     let mut word_iter = input.iter();
     let ref mut model = trainer.outer_map;
@@ -68,13 +51,13 @@ fn count_words(trainer: &mut BigramTrainer, input: &Vec<&str>) {
 
         match outer_entry {
             Entry::Vacant(vacant_entry) => {
-                let mut inner_hm = HashMap::new();
-                inner_hm.insert(word.clone(), 1);
-                vacant_entry.insert(InnerMap(inner_hm));
+                let mut inner_trainer = SimpleWordTrainer::new();
+                inner_trainer.train_word(word.as_slice());
+                vacant_entry.insert(inner_trainer);
             },
             Entry::Occupied(mut occ_entry) => {
-                let inner_hm = occ_entry.get_mut();
-                add_or_increment_inner(inner_hm, word.clone());
+                let inner_trainer = occ_entry.get_mut();
+                inner_trainer.train_word(word.as_slice());
             }
         }
 
@@ -86,12 +69,11 @@ fn count_words(trainer: &mut BigramTrainer, input: &Vec<&str>) {
 #[cfg(test)]
 mod tests {
     use bigram_model::BigramTrainer;
-    use bigram_model::InnerMap;
 
     fn get_score(trainer: &BigramTrainer, word1: &str, word2: &str) -> u32 {
-        let &InnerMap(ref inner) = trainer.outer_map.get(word1).unwrap();
+        let inner_trainer  = trainer.outer_map.get(word1).unwrap();
 
-        inner.get(word2).unwrap().clone()
+        inner_trainer.debug_get_word_score(word2).unwrap().clone()
     }
 
     #[test]
