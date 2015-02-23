@@ -20,26 +20,27 @@ use std::collections::hash_map::Entry;
 #[derive(Debug)]
 pub struct SimpleWordTrainer(HashMap<String, u32>);
 
-
+/// Single-word prediction engine
 ///
 /// SimpleWordPredictor uses a constant sized vector of entries indexed by
 /// first letter. Prediction starts from that index and continues until
 /// the first letter in the vector changes.
 #[derive(Debug)]
 pub struct SimpleWordPredictor {
-    entries: Vec<SimpleWordEntry>,
+    entries: Vec<PredictionEntry>,
     ixs: HashMap<char, u32>,
 }
 
+/// Struct returned by prediction engines.
 #[derive(Debug)]
-pub struct SimpleWordEntry {
+pub struct PredictionEntry {
     pub word: String,
     pub score: u32,
 }
 
-impl Clone for SimpleWordEntry {
+impl Clone for PredictionEntry {
     fn clone(&self) -> Self {
-        SimpleWordEntry {
+        PredictionEntry {
             word: self.word.clone(),
             score: self.score
         }
@@ -47,22 +48,22 @@ impl Clone for SimpleWordEntry {
 }
 
 // Eq, PartialEq, PartialOrd and Ord are necessary to be able to
-// .sort() a vec<SimpleWordEntry>.
-impl Eq for SimpleWordEntry { }
+// .sort() a vec<PredictionEntry>.
+impl Eq for PredictionEntry { }
 
-impl PartialEq for SimpleWordEntry {
+impl PartialEq for PredictionEntry {
     fn eq(&self, other: &Self) -> bool {
         self.word.eq(&other.word)
     }
 }
 
-impl PartialOrd for SimpleWordEntry {
+impl PartialOrd for PredictionEntry {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.word.partial_cmp(&other.word)
     }
 }
 
-impl Ord for SimpleWordEntry {
+impl Ord for PredictionEntry {
     fn cmp(&self, other: &Self) -> Ordering {
         self.word.cmp(&other.word)
     }
@@ -71,8 +72,8 @@ impl Ord for SimpleWordEntry {
 impl SimpleWordPredictor {
     // Given an input string, return the top 10 suggestions based on
     // training data.
-    pub fn predict(&self, input: &str) -> Vec<SimpleWordEntry> {
-        let mut predictions: Vec<SimpleWordEntry> = Vec::new();
+    pub fn predict(&self, input: &str) -> Vec<PredictionEntry> {
+        let mut predictions: Vec<PredictionEntry> = Vec::new();
         let iter = self.entries.iter();
         let first_letter = input.char_at(0);
         let skip_n = self.ixs.get(&first_letter);
@@ -115,7 +116,7 @@ impl SimpleWordPredictor {
             let str_entry: Vec<&str> = line.split(',').collect();
             let word: String = String::from_str(str_entry[0]);
             let n = str_entry[1].parse().ok().unwrap();
-            entries.push(SimpleWordEntry {word: word, score: n});
+            entries.push(PredictionEntry {word: word, score: n});
         }
 
         let ixs = generate_ixs(&entries);
@@ -174,7 +175,7 @@ impl SimpleWordTrainer {
         let mut entries = Vec::with_capacity(size);
 
         for (key, value) in hm {
-            entries.push(SimpleWordEntry {word: key, score: value});
+            entries.push(PredictionEntry {word: key, score: value});
         }
 
         entries.sort();
@@ -184,7 +185,7 @@ impl SimpleWordTrainer {
     }
 }
 
-fn generate_ixs(entries: &Vec<SimpleWordEntry>) -> HashMap<char, u32>{
+fn generate_ixs(entries: &Vec<PredictionEntry>) -> HashMap<char, u32>{
     let mut ixs: HashMap<char, u32> = HashMap::new();
 
     // There will be no newlines in the input. This is a placeholder

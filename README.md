@@ -72,8 +72,8 @@ fn main() {
 
 ## Predicting
 
-Call `SimpleWordPredictor.predict()` with a `&str` to get back a `vec<SimpleWordEntry>`.
-`SimpleWordEntry` has public fields `score` and `word`.
+Call `SimpleWordPredictor.predict()` with a `&str` to get back a `vec<PredictionEntry>`.
+`PredictionEntry` has public fields `score` and `word`.
 
 ```rust
     loop {
