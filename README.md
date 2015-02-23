@@ -19,7 +19,7 @@ input text. The other is the file named `big.txt` which is provided by [Peter No
 (http://norvig.com). This is a raw collection of several books.
 
 I also recommend watching Peter Norvig's lecture titled [The Unreasonable Effectiveness
-of Data](https://www.youtube.com/watch?v=yvDCzhbjYWs)
+of Data](https://www.youtube.com/watch?v=yvDCzhbjYWs).
 
 ### With `training_data.csv`
 If you use the provided training data found in `training_data.csv`,
@@ -84,6 +84,5 @@ Call `SimpleWordPredictor.predict()` with a `&str` to get back a `vec<SimpleWord
         for entry in output {
             println!("{}\t{}", entry.score, entry.word);
          }
-
     }
 ```
