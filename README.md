@@ -18,6 +18,9 @@ named `training_data.csv`. This is an already processed count of a large amount 
 input text. The other is the file named `big.txt` which is provided by [Peter Norvig]
 (http://norvig.com). This is a raw collection of several books.
 
+I also recommend watching Peter Norvig's lecture titled [The Unreasonable Effectiveness
+of Data](https://www.youtube.com/watch?v=yvDCzhbjYWs)
+
 ### With `training_data.csv`
 If you use the provided training data found in `training_data.csv`,
 you only have to call `SimpleWordPredictor::from_file()` with a path
