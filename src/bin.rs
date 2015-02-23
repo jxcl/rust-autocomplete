@@ -3,7 +3,7 @@ extern crate autocomplete;
 
 use std::old_io;
 
-use autocomplete::SimpleWordPredictor;
+use autocomplete::simplemodel::SimpleWordPredictor;
 
 fn main() {
     println!("Loading training data.");
