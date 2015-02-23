@@ -70,8 +70,7 @@ impl Ord for PredictionEntry {
 }
 
 impl SimpleWordPredictor {
-    // Given an input string, return the top 10 suggestions based on
-    // training data.
+    /// Given an initial input string, return 10 predictions.
     pub fn predict(&self, input: &str) -> Vec<PredictionEntry> {
         let mut predictions: Vec<PredictionEntry> = Vec::new();
         let iter = self.entries.iter();
@@ -106,7 +105,7 @@ impl SimpleWordPredictor {
         }
     }
 
-    // Load training data from a CSV file.
+    /// Load training data from a CSV file.
     pub fn from_file(path: &Path) -> SimpleWordPredictor {
         let mut entries = Vec::new();
         let mut file = BufferedReader::new(File::open(path));
@@ -124,7 +123,7 @@ impl SimpleWordPredictor {
         SimpleWordPredictor {entries: entries, ixs: ixs}
     }
 
-    // Save training data to a CSV file.
+    /// Save training data to a CSV file.
     pub fn to_file(&self, path: &Path) {
         let mut file = File::create(path);
         for entry in &self.entries {
@@ -135,6 +134,7 @@ impl SimpleWordPredictor {
 }
 
 impl SimpleWordTrainer {
+    /// Create a trainer trained on an initial str.
     pub fn from_str(input: &str) -> SimpleWordTrainer {
         let model_hm: HashMap<String, u32> = HashMap::new();
         let mut model = SimpleWordTrainer(model_hm);
@@ -144,6 +144,7 @@ impl SimpleWordTrainer {
         model
     }
 
+    /// Create a trainer trained on an initial vector strs.
     pub fn from_vec(input: &Vec<&str>) -> SimpleWordTrainer {
         let model_hm: HashMap<String, u32> = HashMap::new();
         let mut model = SimpleWordTrainer(model_hm);
@@ -153,22 +154,25 @@ impl SimpleWordTrainer {
         model
     }
 
+    /// Create a new untrained trainer.
     pub fn new() -> SimpleWordTrainer {
         let model_hm: HashMap<String, u32> = HashMap::new();
 
         SimpleWordTrainer(model_hm)
     }
 
+    /// Train the model on a string that will be split on spaces.
     pub fn train_str(&mut self, input: &str) {
         let v_input = input.split(' ').collect();
         count_words(self, &v_input);
     }
 
+    /// Train the model on a vector of words.
     pub fn train_vec(&mut self, input: Vec<&str>) {
         count_words(self, &input);
     }
 
-    // Convert the HashMap representation to an indexed vec.
+    /// Perform the calculations needed to predict the next word.
     pub fn finalize(self) -> SimpleWordPredictor {
         let SimpleWordTrainer(hm) = self;
         let size = hm.len();
