@@ -1,4 +1,9 @@
+use predictionentry::PredictionEntry;
 use simplemodel::SimpleWordTrainer;
+use simplemodel::SimpleWordPredictor;
+
+use std::old_io::File;
+use std::old_io::BufferedReader;
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
@@ -30,6 +35,54 @@ impl BigramTrainer {
     pub fn train_str(&mut self, input: &str) {
         let v_input = input.split(' ').collect();
         count_words(self, &v_input);
+    }
+
+    /// Perform the calculations need to predict words.
+    pub fn finalize(self) -> BigramPredictor {
+        let mut outer_model = HashMap::new();
+
+        for (word, trainer) in self.outer_map {
+            let predictor = trainer.finalize();
+            outer_model.insert(word, predictor);
+        }
+
+        BigramPredictor(outer_model)
+    }
+}
+
+/// Bigram prediction engine
+pub struct BigramPredictor(HashMap<String, SimpleWordPredictor>);
+
+impl BigramPredictor {
+    pub fn to_file(&self, path: &Path) {
+        let mut file = File::create(path);
+        let BigramPredictor(ref hm) = *self;
+        let mut keys: Vec<&String> = hm.keys().collect();
+        keys.sort();
+
+        for word in keys {
+            let inner_entries = hm.get(word).unwrap().scores();
+            for entry in inner_entries {
+                write!(&mut file, "{} {},{}\n", word, entry.word, entry.score)
+                    .unwrap();
+            }
+        }
+
+    }
+
+    pub fn predict(&self, word1: &str, letters: &str) -> Vec<PredictionEntry> {
+        let simplemodel = self.get_simplemodel(word1);
+
+        match simplemodel {
+            Some(ref predictor) => predictor.predict(letters),
+            None => Vec::new(),
+        }
+    }
+
+    fn get_simplemodel(&self, word1: &str) -> Option<&SimpleWordPredictor>{
+        let &BigramPredictor(ref hm) = self;
+
+        hm.get(&String::from_str(word1))
     }
 }
 

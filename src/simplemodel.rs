@@ -64,6 +64,10 @@ impl SimpleWordPredictor {
         }
     }
 
+    pub fn scores(&self) -> Vec<PredictionEntry> {
+        self.entries.clone()
+    }
+
     /// Load training data from a CSV file.
     pub fn from_file(path: &Path) -> SimpleWordPredictor {
         let mut entries = Vec::new();
