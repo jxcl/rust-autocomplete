@@ -8,18 +8,23 @@ use std::cmp::{Ord,PartialOrd,Ordering};
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
-// SimpleWordModel uses a HashMap representation to train on word
-// frequency. It is fast for looking up words and incrementing their
-// count but since HashMap does not keep track of order, searching the
-// keys of a hashmap takes a long time. After the model is trained it
-// must be converted to a SimpleWordPredictor which stores the words
-// in lexical order and has an index of first letters.
-#[derive(Debug)]
-pub struct SimpleWordModel(HashMap<String, u32>);
 
-// SimpleWordPredictor uses a constant sized vector of entries indexed by
-// first letter. Prediction starts from that index and continues until
-// the first letter in the vector changes.
+/// Single-word entry trainer
+///
+/// SimpleWordTrainer uses a HashMap representation to train on word
+/// frequency. It is fast for looking up words and incrementing their
+/// count but since HashMap does not keep track of order, searching the
+/// keys of a hashmap takes a long time. After the model is trained it
+/// must be converted to a SimpleWordPredictor which stores the words
+/// in lexical order and has an index of first letters.
+#[derive(Debug)]
+pub struct SimpleWordTrainer(HashMap<String, u32>);
+
+
+///
+/// SimpleWordPredictor uses a constant sized vector of entries indexed by
+/// first letter. Prediction starts from that index and continues until
+/// the first letter in the vector changes.
 #[derive(Debug)]
 pub struct SimpleWordPredictor {
     entries: Vec<SimpleWordEntry>,
@@ -128,29 +133,29 @@ impl SimpleWordPredictor {
     }
 }
 
-impl SimpleWordModel {
-    pub fn from_str(input: &str) -> SimpleWordModel {
+impl SimpleWordTrainer {
+    pub fn from_str(input: &str) -> SimpleWordTrainer {
         let model_hm: HashMap<String, u32> = HashMap::new();
-        let mut model = SimpleWordModel(model_hm);
+        let mut model = SimpleWordTrainer(model_hm);
         let v_input = input.split(' ').collect();
         count_words(&mut model, &v_input);
 
         model
     }
 
-    pub fn from_vec(input: &Vec<&str>) -> SimpleWordModel {
+    pub fn from_vec(input: &Vec<&str>) -> SimpleWordTrainer {
         let model_hm: HashMap<String, u32> = HashMap::new();
-        let mut model = SimpleWordModel(model_hm);
+        let mut model = SimpleWordTrainer(model_hm);
 
         count_words(&mut model, input);
 
         model
     }
 
-    pub fn new() -> SimpleWordModel {
+    pub fn new() -> SimpleWordTrainer {
         let model_hm: HashMap<String, u32> = HashMap::new();
 
-        SimpleWordModel(model_hm)
+        SimpleWordTrainer(model_hm)
     }
 
     pub fn train_str(&mut self, input: &str) {
@@ -164,7 +169,7 @@ impl SimpleWordModel {
 
     // Convert the HashMap representation to an indexed vec.
     pub fn finalize(self) -> SimpleWordPredictor {
-        let SimpleWordModel(hm) = self;
+        let SimpleWordTrainer(hm) = self;
         let size = hm.len();
         let mut entries = Vec::with_capacity(size);
 
@@ -199,8 +204,8 @@ fn generate_ixs(entries: &Vec<SimpleWordEntry>) -> HashMap<char, u32>{
     ixs
 }
 
-fn count_words(model: &mut SimpleWordModel, input: &Vec<&str>) {
-    let &mut SimpleWordModel(ref mut model_hm) = model;
+fn count_words(model: &mut SimpleWordTrainer, input: &Vec<&str>) {
+    let &mut SimpleWordTrainer(ref mut model_hm) = model;
     for word in input {
         if word.len() == 0 {
             continue;
@@ -221,13 +226,13 @@ fn count_words(model: &mut SimpleWordModel, input: &Vec<&str>) {
 
 #[cfg(test)]
 mod tests {
-    use SimpleWordModel;
+    use SimpleWordTrainer;
 
     #[test]
     fn test_from_str() {
-        let model = SimpleWordModel::from_str("world domination is my profession hello hello");
+        let model = SimpleWordTrainer::from_str("world domination is my profession hello hello");
 
-        let SimpleWordModel(hash_map) = model;
+        let SimpleWordTrainer(hash_map) = model;
 
         assert_eq!(1, *hash_map.get("world").unwrap());
         assert_eq!(2, *hash_map.get("hello").unwrap());
@@ -235,9 +240,9 @@ mod tests {
 
     #[test]
     fn test_from_vec() {
-        let model = SimpleWordModel::from_vec(&vec!["rabbit", "rabbit", "hare"]);
+        let model = SimpleWordTrainer::from_vec(&vec!["rabbit", "rabbit", "hare"]);
 
-        let SimpleWordModel(hash_map) = model;
+        let SimpleWordTrainer(hash_map) = model;
 
         assert_eq!(1, *hash_map.get("hare").unwrap());
         assert_eq!(2, *hash_map.get("rabbit").unwrap());
@@ -245,30 +250,30 @@ mod tests {
 
     #[test]
     fn test_train_str() {
-        let mut model = SimpleWordModel::new();
+        let mut model = SimpleWordTrainer::new();
 
         model.train_str("hello hello hello there there");
 
-        let SimpleWordModel(hash_map) = model;
+        let SimpleWordTrainer(hash_map) = model;
         assert_eq!(3, *hash_map.get("hello").unwrap());
         assert_eq!(2, *hash_map.get("there").unwrap());
     }
 
     #[test]
     fn test_train_vec() {
-        let mut model = SimpleWordModel::new();
+        let mut model = SimpleWordTrainer::new();
 
         model.train_vec(vec!["hello", "hello", "hello", "what",
                              "is", "this"]);
 
-        let SimpleWordModel(hash_map) = model;
+        let SimpleWordTrainer(hash_map) = model;
         assert_eq!(3, *hash_map.get("hello").unwrap());
         assert_eq!(1, *hash_map.get("what").unwrap());
     }
 
     #[test]
     fn test_finalize() {
-        let mut model = SimpleWordModel::new();
+        let mut model = SimpleWordTrainer::new();
 
         model.train_str(concat!["anybody can become angry that is easy but to be ",
                                 "angry with the right person and to the right degree ",
@@ -284,7 +289,7 @@ mod tests {
 
     #[test]
     fn test_predict() {
-        let mut model = SimpleWordModel::new();
+        let mut model = SimpleWordTrainer::new();
 
         model.train_str(concat!["anybody can become angry that is easy but to be ",
                                 "angry with the right person and to the right degree ",

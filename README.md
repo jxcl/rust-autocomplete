@@ -29,8 +29,8 @@ to the training data.
 ### With `big.txt` or other corpus
 This method requires you to do a bit more heavy lifting. You will need open your corpus
 and make sure the only characters are the ones that you want in your training data. I
-settled on the characters `[a-z]` and spaces. You then feed this data into `SimpleWordModel`
-using its `train_str()` method. Before you can predict, `SimpleWordModel` must be converted
+settled on the characters `[a-z]` and spaces. You then feed this data into `SimpleWordTrainer`
+using its `train_str()` method. Before you can predict, `SimpleWordTrainer` must be converted
 to `SimpleWordPredictor`, which changes its internal representation of the training data.
 
 This is how I trained autocomplete to create `training_data.csv`:
@@ -51,7 +51,7 @@ fn clean_line(line: String) -> String {
     new_string
 }
 
-fn train_model(model: &mut SimpleWordModel, path: Path) {
+fn train_model(model: &mut SimpleWordTrainer, path: Path) {
     let mut file = BufferedReader::new(File::open(&path));
     for line in file.lines() {
         let cleaned_line = clean_line(line.unwrap());
@@ -60,7 +60,7 @@ fn train_model(model: &mut SimpleWordModel, path: Path) {
 }
 
 fn main() {
-    let mut model = SimpleWordModel::new();
+    let mut model = SimpleWordTrainer::new();
     let file_path = Path::new("big.txt");
     println!("Training.");
     train_model(&mut model, file_path);
