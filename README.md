@@ -8,15 +8,19 @@ I figured it would be a good way to continue learning Rust.
 
 # Usage
 
-Using `SimpleWordPredictor` is easy. First it must be trained.
+There are two predictors available. `SimpleWordPredictor` works on
+single words, and `BigramPredictor` takes into account the previously
+typed word when predicting the current word.
 
 ## Training
 
-Autocomplete will work better with a larger corpus of training data available to it.
-In this repository are provided two types of training data. The first is the file
-named `training_data.csv`. This is an already processed count of a large amount of
-input text. The other is the file named `big.txt` which is provided by [Peter Norvig]
-(http://norvig.com). This is a raw collection of several books.
+Autocomplete will work better with a larger corpus of training data
+available to it.  In this repository are provided two types of
+training data. The first is the file named `training_data.csv`. This
+is an already processed count of a large amount of input text for
+`SimpleWordPredictor`. The other is the file named `big.txt` which is
+provided by [Peter Norvig] (http://norvig.com). This is a raw
+collection of several books.
 
 I also recommend watching Peter Norvig's lecture titled [The Unreasonable Effectiveness
 of Data](https://www.youtube.com/watch?v=yvDCzhbjYWs).
@@ -24,7 +28,9 @@ of Data](https://www.youtube.com/watch?v=yvDCzhbjYWs).
 ### With `training_data.csv`
 If you use the provided training data found in `training_data.csv`,
 you only have to call `SimpleWordPredictor::from_file()` with a path
-to the training data.
+to the training data. There is currently no
+`BigramPredictor::from_file()` due to issues with encapsulation that
+I am working on.
 
 ### With `big.txt` or other corpus
 This method requires you to do a bit more heavy lifting. You will need open your corpus
@@ -33,7 +39,7 @@ settled on the characters `[a-z]` and spaces. You then feed this data into `Simp
 using its `train_str()` method. Before you can predict, `SimpleWordTrainer` must be converted
 to `SimpleWordPredictor`, which changes its internal representation of the training data.
 
-This is how I trained autocomplete to create `training_data.csv`:
+This is how I trained `SimpleWordPredictor` to create `training_data.csv`:
 
 ```rust
 fn clean_line(line: String) -> String {
@@ -70,9 +76,11 @@ fn main() {
 }
 ```
 
+Training `BigramTrainer` works in almost an identical manner.
+
 ## Predicting
 
-Call `SimpleWordPredictor.predict()` with a `&str` to get back a `vec<PredictionEntry>`.
+Call `SimpleWordPredictor.predict()` with a `&str` to get back a `Vec<PredictionEntry>`.
 `PredictionEntry` has public fields `score` and `word`.
 
 ```rust
@@ -86,3 +94,7 @@ Call `SimpleWordPredictor.predict()` with a `&str` to get back a `vec<Prediction
          }
     }
 ```
+
+When using `BigramTrainer`, `predict()` must be called with the
+previous word as the first argument and the current set of letters as
+the second.
